@@ -1,7 +1,8 @@
 ---
 layout: post 
-title: Artificial Insanity 
+title: Artist Statement
 hide: true
 show_reading_time: false
 ---
 
+hello
