@@ -11,6 +11,8 @@ show_reading_time: false
 ## Need to add
 - good ending
 - background design that is effected
+    - the player has to go through each decesion, will update background for each depdening on what happens on the decesions
+    - then if player gets through all decesions, he can negoicate ai terms, basically win game
 - change rules at begining
 - make the bars decrease smoother and increase smoother
 
