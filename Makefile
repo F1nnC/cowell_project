@@ -1,6 +1,6 @@
 HOST ?= localhost
 PORT ?= 4600
-REPO_NAME ?= student
+REPO_NAME ?= cowell_project
 LOG_FILE = /tmp/jekyll$(PORT).log
 
 SHELL = /bin/bash -c

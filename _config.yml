@@ -15,11 +15,11 @@
 #   results) and in your feed.xml site description.
 
 title: Open Coding 
-description: "Class of 2026"
-owner_name: John Mortensen
+description: "Videogame for final project"
+owner_name: Finn Carpenter
 github_username: jm1021 
-github_repo: "student" 
-baseurl: "/student" 
+github_repo: "cowell_project" 
+baseurl: "/cowell_project" 
 future: true
 
 # Build settings
