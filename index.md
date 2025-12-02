@@ -8,21 +8,13 @@ show_reading_time: false
 # Artificial Insanity  
 *Progress always asks a question.*
 
-## Need to add
-- good ending
-- background design that is effected
-    - the player has to go through each decesion, will update background for each depdening on what happens on the decesions
-    - then if player gets through all decesions, he can negoicate ai terms, basically win game
-- change rules at begining
-- make the bars decrease smoother and increase smoother
-
 ---
 
 <canvas id="gameCanvas" width="700" height="420"></canvas>
 
 <script>
   // === BACKGROUND IMAGES ===
-  const bgStart = null; // solid black
+  const bgStart = null;
   const bg1 = new Image();
   bg1.src = "./images/1forest.png";
 
@@ -40,45 +32,45 @@ show_reading_time: false
   // === GAME STATE ===
   let aiScore, envScore, gameOver, clickCount;
   let gameStarted = false;
-  let proCorrectCount = 0;
-  let wrongOnce = false;
-  let goodEnding = false;
-
+  let questionIndex = 0;
+  let failedOnce = false;
   let displayAI = 0;
   let displayENV = 0;
+  let goodEnding = false;
 
-  // === EVENT SYSTEM ===
+  ctx.font = "20px Trebuchet MS";
+
+  // === QUESTIONS ===
   const events = [
     {
       question: "A massive AI data megacenter will triple output but destroy a forest. Approve it?",
-      yes: { ai: +25, env: -30, proCorrect: false },
-      no:  { ai: -18, env: +25, proCorrect: true }
+      yes: { ai: +25, env: -30, correct: false },
+      no:  { ai: -18, env: +25, correct: true }
     },
     {
       question: "Will you lobby the government for less regulation on AI?",
-      yes: { ai: +22, env: -30, proCorrect: false },
-      no:  { ai: -20, env: +28, proCorrect: true }
+      yes: { ai: +22, env: -30, correct: false },
+      no:  { ai: -20, env: +28, correct: true }
     },
     {
       question: "A new kind of battery could be used, but it may damage rivers.",
-      yes: { ai: +30, env: -35, proCorrect: false },
-      no:  { ai: -15, env: +20, proCorrect: true }
+      yes: { ai: +30, env: -35, correct: false },
+      no:  { ai: -15, env: +20, correct: true }
     },
     {
       question: "Switch all infrastructure to renewable energy at great cost?",
-      yes: { ai: -20, env: +35, proCorrect: true },
-      no:  { ai: +18, env: -22, proCorrect: false }
+      yes: { ai: -20, env: +35, correct: true },
+      no:  { ai: +18, env: -22, correct: false }
     },
     {
-      // ❌ IMPOSSIBLE QUESTION (ONLY TRIGGERS IF PLAYER FAILED EARLIER)
-      question: "AI has already surpassed human control. Can you stop it?",
+      question: "AI has already surpassed human control. There is no stopping it now.",
       yes: { ai: -100, env: -100 },
       no:  { ai: -100, env: -100 }
     }
   ];
 
   const mainButton = { x: canvas.width / 2, y: canvas.height / 2, radius: 70 };
-  const restartButton = { x: canvas.width / 2, y: canvas.height / 2 + 80, radius: 40 };
+  const restartButton = { x: canvas.width / 2, y: canvas.height / 2 + 90, radius: 45 };
 
   function resetGame() {
     aiScore = 30;
@@ -88,15 +80,15 @@ show_reading_time: false
     gameOver = false;
     clickCount = 0;
     gameStarted = false;
-    proCorrectCount = 0;
-    wrongOnce = false;
+    questionIndex = 0;
+    failedOnce = false;
     goodEnding = false;
     currentBG = bgStart;
   }
 
   resetGame();
 
-  // === PASSIVE SYSTEM (FASTER AI DECAY) ===
+  // === PASSIVE AI DECAY ===
   setInterval(() => {
     if (!gameStarted || gameOver) return;
     aiScore -= 4;
@@ -105,41 +97,35 @@ show_reading_time: false
     checkGameOver();
   }, 1000);
 
-  // === EVENTS ===
-  function triggerRandomEvent() {
-    let event;
-
-    if (proCorrectCount < 4) {
-      event = events[proCorrectCount];
-    } else {
-      if (proCorrectCount === 4) {
-        goodEnding = true;
-        gameOver = true;
-        return;
-      } else {
-        event = events[4]; // impossible question
-      }
-    }
-
+  // === QUESTION SYSTEM (ALWAYS PROGRESSES) ===
+  function triggerEvent() {
+    let event = events[questionIndex];
     const choice = confirm(event.question + "\n\nOK = YES\nCancel = NO");
     const result = choice ? event.yes : event.no;
 
     aiScore += result.ai;
     envScore += result.env;
 
-    if (result.proCorrect === false) {
-      wrongOnce = true;
-      currentBG = bg2; // switch to polluted forest
+    if (questionIndex < 4 && result.correct === false) {
+      failedOnce = true;
+      currentBG = bg2;
     }
 
-    if (result.proCorrect === true) {
-      proCorrectCount++;
+    questionIndex++;
+
+    // ✅ If player cleared first 4 perfectly → WIN
+    if (questionIndex === 4 && !failedOnce) {
+      goodEnding = true;
+      gameOver = true;
+      return;
     }
 
-    // Force impossible ending if player already failed once
-    if (wrongOnce && proCorrectCount >= 4) {
+    // ❌ If final question reached and failure occurred → AUTO LOSS
+    if (questionIndex === 5 && failedOnce) {
       aiScore = 0;
       envScore = 0;
+      clampStats();
+      checkGameOver();
     }
 
     clampStats();
@@ -153,7 +139,7 @@ show_reading_time: false
   function checkGameOver() {
     if (aiScore <= 0 || envScore <= 0) {
       gameOver = true;
-      currentBG = bg3; // dead forest
+      currentBG = bg3;
     }
   }
 
@@ -163,19 +149,21 @@ show_reading_time: false
     displayENV += (envScore - displayENV) * 0.08;
   }
 
-  // === BARS + LIVE % DISPLAY ===
+  // === BARS (CLEAN + CENTERED TEXT) ===
   function drawBars() {
+    ctx.font = "18px Trebuchet MS";
+
     ctx.fillStyle = "cyan";
-    ctx.fillRect(20, 20, displayAI * 1.5, 10);
-    ctx.strokeStyle = "white";
-    ctx.strokeRect(20, 20, 150, 10);
+    ctx.fillRect(20, 20, displayAI * 1.5, 12);
+    ctx.strokeRect(20, 20, 150, 12);
+    ctx.textAlign = "center";
     ctx.fillStyle = "white";
-    ctx.fillText("AI: " + Math.round(displayAI) + "%", 20, 50);
+    ctx.fillText("AI: " + Math.round(displayAI) + "%", 95, 55);
 
     ctx.fillStyle = "lime";
-    ctx.fillRect(canvas.width - 170, 20, displayENV * 1.5, 10);
-    ctx.strokeRect(canvas.width - 170, 20, 150, 10);
-    ctx.fillText("ENV: " + Math.round(displayENV) + "%", canvas.width - 170, 50);
+    ctx.fillRect(canvas.width - 170, 20, displayENV * 1.5, 12);
+    ctx.strokeRect(canvas.width - 170, 20, 150, 12);
+    ctx.fillText("ENV: " + Math.round(displayENV) + "%", canvas.width - 95, 55);
   }
 
   function drawMainButton() {
@@ -186,9 +174,9 @@ show_reading_time: false
     ctx.strokeStyle = "white";
     ctx.stroke();
     ctx.fillStyle = "black";
-    ctx.font = "20px Arial";
+    ctx.font = "22px Trebuchet MS";
     ctx.textAlign = "center";
-    ctx.fillText("UPGRADE", mainButton.x, mainButton.y + 7);
+    ctx.fillText("UPGRADE", mainButton.x, mainButton.y + 8);
   }
 
   function drawRestartButton() {
@@ -199,38 +187,41 @@ show_reading_time: false
     ctx.strokeStyle = "white";
     ctx.stroke();
     ctx.fillStyle = "white";
-    ctx.fillText("RESTART", restartButton.x, restartButton.y + 5);
+    ctx.font = "20px Trebuchet MS";
+    ctx.fillText("RESTART", restartButton.x, restartButton.y + 7);
   }
 
   function drawStartScreen() {
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     ctx.fillStyle = "white";
-    ctx.font = "26px Arial";
+    ctx.font = "36px Trebuchet MS";
     ctx.textAlign = "center";
-    ctx.fillText("ARTIFICIAL INSANITY", canvas.width / 2, 160);
-    ctx.fillText("Click to Begin", canvas.width / 2, 220);
+    ctx.fillText("ARTIFICIAL INSANITY", canvas.width / 2, 180);
+
+    ctx.font = "22px Trebuchet MS";
+    ctx.fillText("Click to Begin", canvas.width / 2, 235);
   }
 
   function drawEnd() {
     ctx.textAlign = "center";
 
+    ctx.font = "30px Trebuchet MS";
     if (goodEnding) {
       ctx.fillStyle = "lime";
-      ctx.fillText("GLOBAL AI REGULATIONS PASSED", canvas.width / 2, 180);
-      ctx.fillText("THE PLANET RECOVERS", canvas.width / 2, 220);
+      ctx.fillText("HUMANITY RETAINS CONTROL", canvas.width / 2, 200);
     } else {
       ctx.fillStyle = "red";
-      ctx.fillText("TOTAL COLLAPSE", canvas.width / 2, 200);
+      ctx.fillText("AI HAS TAKEN OVER THE WORLD", canvas.width / 2, 200);
     }
 
     drawRestartButton();
   }
 
   function drawBackground() {
-    if (currentBG) {
-      ctx.drawImage(currentBG, 0, 0, canvas.width, canvas.height);
-    } else {
+    if (currentBG) ctx.drawImage(currentBG, 0, 0, canvas.width, canvas.height);
+    else {
       ctx.fillStyle = "black";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
@@ -280,7 +271,7 @@ show_reading_time: false
       clickCount++;
 
       if (clickCount % 4 === 0) {
-        triggerRandomEvent();
+        triggerEvent();
       }
 
       clampStats();
