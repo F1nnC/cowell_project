@@ -6,9 +6,11 @@ show_reading_time: false
 ---
 
 # Artificial Insanity  
-*Progress always asks a question.*
+1. Don't let your AI or Environment bar hit zero 
+2. Answer the questions correctly
+3. Click to begin
 
----
+
 
 <canvas id="gameCanvas" width="700" height="420"></canvas>
 
